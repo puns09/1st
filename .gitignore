@@ -1,0 +1,3 @@
+# Vetting reports contain personal data. Never commit them.
+vetting/reports/
+vetting/inputs/
