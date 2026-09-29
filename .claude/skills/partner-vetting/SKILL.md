@@ -1,96 +1,149 @@
 ---
 name: partner-vetting
-description: Run the Everest Fleet pre-onboarding check on a prospective employee or vendor when the user shares a CV, resume, vendor profile or company document and asks to vet, verify, screen or check the person or company. Produces a sourced, confidence-tagged report for human review.
+description: Run the Everest Fleet background check on a prospective employee or vendor (an individual broker who sources, onboards and manages drivers) when the user shares a CV, resume or profile and asks to vet, verify, screen or check the person. Produces a Word report for leadership, delivered in chat only.
 ---
 
-# Everest Fleet partner vetting
+# Everest Fleet background check
 
-The output is a set of leads for a human decision maker, not a decision.
-Never recommend reject or hire. Recommend what to verify next.
+Audience: Everest Fleet leadership. Output: one Word (.docx) report sent in
+chat. The report surfaces evidence and open questions. It never says hire or
+reject.
 
-## Step 0: Gates (stop if any fails)
+Consent is handled by Legal. Do not ask about it.
 
-1. **Consent.** Ask the user to confirm the subject has signed Everest Fleet's
-   background verification consent covering these checks (India DPDP Act 2023
-   requires notice and consent for this processing). If not confirmed, stop and
-   say so. Do not run "just the public part" as a workaround.
-2. **Subject type.** Decide: `individual` (employee, consultant) or `entity`
-   (vendor company, with its named promoters/directors as individuals).
-3. **Storage.** Write inputs to `vetting/inputs/` and reports to
-   `vetting/reports/`. Both are gitignored. Never commit, push, email or upload
-   a report unless the user asks for that specific destination.
+## Data handling
 
-## Step 1: Extract claims
+- Work only in the session scratchpad directory. Never write the CV, notes or
+  report inside the repository, Google Drive, Gmail or any artifact.
+- Deliver the .docx with SendUserFile (display: attach), then delete the CV
+  copy, notes and report from the scratchpad and say so.
 
-Read the CV/profile and list every checkable claim in a table:
-name, email, phone, city, each employer with title and dates, each degree with
-institution and year, certifications, company CIN/GSTIN/PAN (entities),
-public links (LinkedIn, GitHub, website). Note date gaps over 3 months and
-overlapping roles.
+## Step 1. Intake
 
-## Step 2: Anchor identity
+Confirm with the user: subject type (`employee` or `vendor`), role, city.
+Vendors are individuals who source, onboard and manage drivers for Everest
+Fleet, not companies.
 
-Pick 2 or more anchors (name + employer + city, email, profile URL) before
-searching. A search result counts as the subject only if it matches at least
-two anchors. Otherwise record it under "Possible matches, not attributed".
-Common Indian names produce frequent false matches: be strict.
+## Step 2. Extract claims from the CV
 
-## Step 3: Checks
+Name, phone, email, city, social handles, every employer with title and dates,
+education, certifications. Flag gaps over 3 months and overlapping roles.
 
-Run what applies. For each, use WebSearch/WebFetch and record the URL.
+## Step 3. Anchor identity
 
-**Individuals**
-- Employers exist and existed in the claimed period (company site, MCA
-  company master data, news). Flag shell or unverifiable employers.
-- Titles and dates vs. public profiles and press. LinkedIn usually blocks
-  fetching: use search snippets and say so.
-- Institutions are recognised (UGC, AICTE lists). Flag known diploma mills.
-  Degree authenticity itself needs the institution or DigiLocker: list it as a
-  manual step.
-- Professional footprint: publications, talks, GitHub, awards, news quotes.
-- Adverse media: fraud, cheating, embezzlement, harassment, regulatory orders
-  (SEBI, RBI), NCLT, director disqualification. Only where anchored.
-- Directorships: MCA director search on the name (DIN), for undisclosed
-  conflicts with Everest Fleet vendors or competitors.
+A web result counts as the subject only if it matches 2 or more anchors:
+name + city, employer, phone, email, or a confirmed handle. Weaker matches go
+to "Possible matches, not attributed". Common names produce many false hits.
 
-**Entities (vendors)**
-- MCA master data: CIN, status (active/strike off), incorporation date,
-  directors, paid-up capital, open charges, last filing date.
-- GSTIN status and registered name match (public GST search).
-- Insolvency/NCLT, SEBI orders, blacklists, EPFO establishment presence.
-- Adverse media on the entity and each director (anchored).
-- Financial health from filed or published data only (revenue, charges,
-  auditor remarks if public). Say plainly when financials are behind MCA's
-  paywall and were not seen.
+## Step 4. Work history (everyone)
 
-**Internal (optional, ask first)**
-- Everest Reporting DB: read-only lookup for prior dealings with this
-  person/vendor. Inspect schema before querying; do not guess table names.
-- Gmail/Drive: prior correspondence, only if the user asks.
+- Each employer existed in the claimed period (company site, MCA data, news).
+- Titles and dates vs. public profiles and press.
+- Institution recognised (UGC / AICTE lists). Degree authenticity is a manual
+  check.
+- Undisclosed directorships or own businesses (MCA director search).
 
-## Step 4: Out of scope (do not collect, even if found)
+## Step 5. Vendor-specific checks
 
-Religion, caste, health, disability, pregnancy, sexual orientation, political
-views, union membership, family members, relationships, home location
-tracking, personal (non-professional) social media content. If such content
-surfaces incidentally, leave it out of the report.
+- Past or current work with other fleet operators or aggregators (Uber fleet
+  partners, Ola, Rapido, other fleet companies).
+- Driver complaints: Facebook groups, YouTube, Google reviews, complaint
+  forums. Look for charging drivers fees, withholding earnings or deposits,
+  vehicle financing schemes, poaching drivers to competitors.
+- Driver recruitment posts under their name or number, especially ones asking
+  for fees or deposits.
+- GST registration or business in their name, if any.
 
-Also not possible from here, list as manual/vendor steps: individual credit
-score (CIBIL via licensed agency with consent), criminal/police verification,
-Aadhaar/PAN verification, reference calls, physical address verification.
+## Step 6. Adverse media and legal
 
-## Step 5: Report
+News of FIRs, fraud, cheating, cheque bounce (Sec 138 NI Act), recovery
+suits, harassment, violence, regulatory orders. eCourts needs a captcha: add
+it to the browser handoff list with the exact search to run.
 
-Write `vetting/reports/<YYYY-MM-DD>_<subject-slug>.md` using
-`vetting/REPORT_TEMPLATE.md`. Rules:
-- Every finding has a source URL, access date and a tag: [Certain] (primary
-  source, anchored), [Likely] (secondary source or one weak anchor),
-  [Guessing] (inference; say what it rests on).
-- "Nothing found" is a finding. Say what was searched.
-- Separate "Discrepancies with CV" from "Adverse findings".
-- Adverse findings get a "question to put to the subject" so they can respond
-  before any decision.
-- End with the manual verification checklist.
+## Step 7. Social media (every public account, none skipped)
 
-Reply in chat with a 5-line summary and the report path. Do not paste the
-full report into chat unless asked.
+Platforms: LinkedIn, Facebook, Instagram, X, YouTube, plus any handle in the CV.
+
+1. Find accounts via web search on name + city + employer + phone.
+2. Try to open each public account yourself (WebFetch, or the pre-installed
+   Chromium via Playwright).
+3. For every account or search that hits a login wall or captcha, add it to a
+   numbered **browser handoff list**: exact URL or search string, and what to
+   screenshot (profile header, About, recent 20 posts, any posts matching the
+   Step 5 and 6 themes). Send the list to the user and wait for screenshots
+   before finalising the report. Never mark a platform "nothing found" if it
+   was not actually viewed; mark it "not viewed" instead.
+
+Record only what bears on the role:
+- Profile consistency with the CV (employer, title, city, dates).
+- Conduct: threats, abuse, harassment, violence, bragging about fraud.
+- Work for competitors, driver recruitment activity.
+
+Never record religion, caste, political views, health, family, relationships
+or personal life, even if clearly visible. Leave it out of notes and report.
+
+## Step 8. Everest Reporting DB check (read-only)
+
+Search the subject's full name (and phone, if on the CV) with case-insensitive
+ILIKE. Report a section **only if the name is found**. If not found, omit the
+section entirely.
+
+Tables to check:
+
+| Table | What a hit means | Columns to report |
+|---|---|---|
+| `public.fleet_driver` | Was an Everest driver | status, date_of_joining, date_of_exit, city_id |
+| `public.fleet_driver_blacklist` (join `driver_id` to `fleet_driver.id`) | Blacklisted as a driver | start_date, end_date, blacklist_reason, whitelist_reason |
+| `public.driver_exited` (join `driver_id`) | Driver exit record | disposition, deactivation_date |
+| `crm.lead_lead_view` + `crm.lead_details` (on `lead_id`) | Applied as a driver | created_at, blacklisted, exit_reason, total_os |
+| `public.everest_partners`, `vendor.franchise_vendors`, `public.everest_vendor_leads` | Past or current vendor / partner | vendor_type or partner_type, activation_date, deactivation_date |
+| `public.everest_subvendor_vendor_mapping` | Was a sub-vendor | subvendor_name, city |
+| `public.everest_employee_master` | Past or current employee | employment_status, designation, doj, date_of_relieving |
+| `public.vendors` | Service or supply vendor | vendor_type, is_active |
+
+Rules:
+- Check the column names with `get_table_schema` before querying; the schema
+  may have changed.
+- Never copy PAN, bank details, DOB, address or father's name into the report.
+- A name match alone is not identity. Tag it [Likely] only if city or phone
+  also matches, otherwise [Guessing] and say "name match only".
+- Outstanding balances (`total_os`, ledger balances) are relevant and should be
+  reported for returning drivers or vendors.
+
+## Step 9. Build the Word report
+
+Load the `anthropic-skills:docx` skill, then build the .docx in the scratchpad.
+
+Tags on every finding: [Certain] primary source and anchored; [Likely]
+secondary source or weaker anchor; [Guessing] inference, state what it rests
+on. Every finding has a source (URL, screenshot number, or DB table) and
+access date.
+
+Structure:
+
+1. **Page 1, leadership summary**
+   - Name, role, subject type, city, report date.
+   - Status line: Clear / Minor discrepancies / Needs review.
+   - Up to 5 bullets, [Certain] and [Likely] findings only.
+   - Boxed "Unconfirmed, do not act on" list for [Guessing] items and
+     weakly anchored matches.
+2. **Claims vs. evidence** table: claim, evidence, source, tag.
+3. **Discrepancies with CV**: item, CV says, evidence says, source, tag,
+   question for the subject.
+4. **Adverse findings**: finding, source, date, anchors matched, tag,
+   question for the subject.
+5. **Vendor checks** (vendors only).
+6. **Social media**: one row per platform: handle, viewed by (Claude / user
+   screenshot / not viewed), consistency with CV, relevant findings.
+7. **Everest internal records** (only if the name was found).
+8. **Searched, nothing found**: what was searched.
+9. **Possible matches, not attributed.**
+10. **Limits of this report**: what could not be accessed.
+11. **Manual verification checklist**: degree verification, reference calls,
+    police verification, credit check via licensed agency (if the role handles
+    cash), address verification, subject's responses to open questions.
+
+## Step 10. Deliver
+
+Send the .docx with a 3-line chat summary (status line, top finding, number of
+open questions). Then delete the working files and confirm.
